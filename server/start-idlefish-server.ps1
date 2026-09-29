@@ -1,2 +1,3 @@
-Set-Location 'C:\Users\jiangxudong\Codex Project\VirtualApp'
-& 'C:\Program Files\nodejs\node.exe' 'C:\Users\jiangxudong\Codex Project\VirtualApp\server\idlefish-ingest-server.js'
+. "$PSScriptRoot/../tools/idlefish_env.ps1"
+Import-IdlefishEnv
+node "$PSScriptRoot/idlefish-ingest-server.js"

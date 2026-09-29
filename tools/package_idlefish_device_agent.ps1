@@ -37,6 +37,9 @@ dotnet publish $trayProject `
 $exampleConfig = Join-Path $PSScriptRoot "IdlefishDeviceAgent\idlefish-agent.example.json"
 $targetConfig = Join-Path $resolvedOutput "idlefish-agent.json"
 
+Copy-Item -Path (Join-Path (Split-Path -Parent $PSScriptRoot) '.env.example') `
+    -Destination (Join-Path $resolvedOutput '.env.example') -Force
+
 Copy-Item -Path $exampleConfig `
     -Destination (Join-Path $resolvedOutput "idlefish-agent.example.json") `
     -Force
@@ -87,4 +90,4 @@ if ($PlatformToolsPath -and (Test-Path (Join-Path $PlatformToolsPath "adb.exe"))
 Write-Host "Packaged Idlefish Device Agent:"
 Write-Host (Join-Path $resolvedOutput "IdlefishDeviceAgent.exe")
 Write-Host (Join-Path $resolvedOutput "IdlefishDeviceAgent.Tray.exe")
-Write-Host "Edit idlefish-agent.json next to the exe before running it on another PC."
+Write-Host "Create .env from .env.example next to the config and set IDLEFISH_SERVER_BASE_URL before running."

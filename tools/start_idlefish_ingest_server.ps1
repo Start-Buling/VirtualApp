@@ -1,8 +1,12 @@
 param(
-    [int]$Port = 18080
+    [int]$Port = 0
 )
 
 $ErrorActionPreference = "Stop"
+
+. "$PSScriptRoot/idlefish_env.ps1"
+Import-IdlefishEnv
+if (-not $Port) { $Port = if ($env:PORT) { [int]$env:PORT } else { 18080 } }
 
 $repoRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $serverScript = Join-Path $repoRoot "server\idlefish-ingest-server.js"

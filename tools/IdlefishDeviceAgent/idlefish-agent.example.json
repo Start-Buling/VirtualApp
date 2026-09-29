@@ -1,7 +1,7 @@
 {
   "mode": "poll",
   "agentId": "",
-  "serverBaseUrl": "http://10.6.0.10:8000",
+  "serverBaseUrl": "",
   "deviceNo": "device_001",
   "deviceName": "Android Phone",
   "serial": "",

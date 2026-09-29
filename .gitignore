@@ -111,3 +111,11 @@ basegenerator/*
 /page-probe/
 /server/data/
 current_idlefish_page.png
+
+# Deployment configuration and local device state
+.env
+.env.*
+!.env.example
+idlefish-agent.json
+idlefish-devices.json
+obj/

@@ -47,7 +47,7 @@ ADB lookup order:
 - USB debugging enabled and authorized on the phone.
 - `adb devices` shows the phone in `device` state.
 - CarlosApp debug build installed on the phone.
-- The PC can access the data-collector API, for example `http://10.6.0.10:8000`.
+- The PC can access the data-collector API configured in `.env`.
 
 ## Config
 
@@ -57,7 +57,7 @@ ADB lookup order:
 {
   "mode": "poll",
   "agentId": "",
-  "serverBaseUrl": "http://10.6.0.10:8000",
+  "serverBaseUrl": "",
   "deviceNo": "device_001",
   "deviceName": "Android Phone",
   "serial": "",
@@ -157,7 +157,7 @@ Collect service scores after binding:
 Override without editing JSON:
 
 ```powershell
-.\IdlefishDeviceAgent.exe --mode discover --device-no device_001 --users 0,1,2 --server http://10.6.0.10:8000
+.\IdlefishDeviceAgent.exe --mode discover --device-no device_001 --users 0,1,2
 ```
 
 ## Current Limit

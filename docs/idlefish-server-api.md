@@ -96,8 +96,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\discover_idlefish_virtual_shops
   -Serial 6H5PY5GEZ9QGJJO7 `
   -DeviceNo device_001 `
   -VirtualUserIds 0,1 `
-  -IngestUrl http://10.6.0.10:8000/api/v1/ingest/events `
-  -DiscoveryUrl http://10.6.0.10:8000/api/v1/idlefish/discovery/events `
   -SkipHealthCheck
 ```
 
@@ -108,8 +106,6 @@ powershell -ExecutionPolicy Bypass -File .\tools\collect_idlefish_virtual_servic
   -Serial 6H5PY5GEZ9QGJJO7 `
   -DeviceNo device_001 `
   -VirtualUserIds 0,1 `
-  -IngestUrl http://10.6.0.10:8000/api/v1/ingest/events `
-  -DiscoveryUrl http://10.6.0.10:8000/api/v1/idlefish/discovery/events `
   -SkipHealthCheck
 ```
 

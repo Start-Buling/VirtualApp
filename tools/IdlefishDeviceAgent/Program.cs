@@ -718,7 +718,7 @@ internal sealed class AgentConfig
 {
     public string Mode { get; set; } = "discover";
     public string AgentId { get; set; } = "";
-    public string ServerBaseUrl { get; set; } = "http://10.6.0.10:8000";
+    public string ServerBaseUrl { get; set; } = "";
     public string DeviceNo { get; set; } = "device_001";
     public string DeviceName { get; set; } = "";
     public string Serial { get; set; } = "";
@@ -787,6 +787,11 @@ internal sealed class AgentConfig
             ? JsonSerializer.Deserialize<AgentConfig>(File.ReadAllText(fullConfigPath), JsonOptions()) ?? new AgentConfig()
             : new AgentConfig();
         config.ConfigDirectory = Path.GetDirectoryName(fullConfigPath) ?? AppContext.BaseDirectory;
+
+        DeploymentEnvironment.Load(Environment.GetEnvironmentVariable("IDLEFISH_ENV_FILE")
+            ?? Path.Combine(config.ConfigDirectory, ".env"));
+        config.ServerBaseUrl = Environment.GetEnvironmentVariable("IDLEFISH_SERVER_BASE_URL") ?? config.ServerBaseUrl;
+        config.AgentToken = Environment.GetEnvironmentVariable("IDLEFISH_AGENT_TOKEN") ?? config.AgentToken;
 
         for (var i = 0; i < args.Length; i++)
         {
@@ -861,6 +866,11 @@ internal sealed class AgentConfig
         }
 
         config.ServerBaseUrl = config.ServerBaseUrl.TrimEnd('/');
+        if (!Uri.TryCreate(config.ServerBaseUrl, UriKind.Absolute, out var serverUri)
+            || (serverUri.Scheme != "http" && serverUri.Scheme != "https") || string.IsNullOrEmpty(serverUri.Host))
+        {
+            throw new ArgumentException("Set IDLEFISH_SERVER_BASE_URL in .env to an absolute HTTP(S) collector URL.");
+        }
         config.VirtualUserMode = string.IsNullOrWhiteSpace(config.VirtualUserMode)
             ? "all"
             : config.VirtualUserMode.Trim();

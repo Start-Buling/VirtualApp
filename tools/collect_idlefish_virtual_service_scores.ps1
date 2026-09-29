@@ -2,8 +2,8 @@ param(
     [string]$Serial = "",
     [string]$DeviceNo = "device_001",
     [int[]]$VirtualUserIds = @(0, 1, 2),
-    [string]$IngestUrl = "http://10.6.0.10:8000/api/v1/ingest/events",
-    [string]$DiscoveryUrl = "http://10.6.0.10:8000/api/v1/idlefish/discovery/events",
+    [string]$IngestUrl = "",
+    [string]$DiscoveryUrl = "",
     [int]$WaitSecondsPerShop = 42,
     [int]$RecentLimit = 10,
     [string]$HostPackage = "com.carlos.multiapp",
@@ -13,6 +13,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+. "$PSScriptRoot/idlefish_env.ps1"
+Import-IdlefishEnv
+if (-not $IngestUrl) { $IngestUrl = Get-IdlefishServerUrl '/api/v1/ingest/events' }
+if (-not $DiscoveryUrl) { $DiscoveryUrl = Get-IdlefishServerUrl '/api/v1/idlefish/discovery/events' }
+if (-not $DeviceSecret) { $DeviceSecret = $env:IDLEFISH_DEVICE_SECRET }
 
 function Get-FirstDevice {
     $lines = & adb devices
