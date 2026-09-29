@@ -3,6 +3,7 @@
 //
 #include <Jni/VAJni.h>
 #include <unistd.h>
+#include <cstring>
 #include <Substrate/CydiaSubstrate.h>
 #include <utils/controllerManagerNative.h>
 #include "VMHook.h"
@@ -126,6 +127,16 @@ jstring new_nativeLoad(JNIEnv *env, jclass clazz, jstring _file, jobject classLo
     ScopeUtfString orig_path(_file);
     char buffer[PATH_MAX];
     const char *redirected_path = IOUniformer::query(orig_path.c_str(), buffer, sizeof(buffer));
+    const char *load_path = redirected_path != NULL ? redirected_path : orig_path.c_str();
+    if (load_path != NULL
+        && (strstr(load_path, "com.jihuanshe") != NULL
+            || strstr(load_path, "libexec") != NULL
+            || strstr(load_path, "NetHTProtect") != NULL
+            || strstr(load_path, "Encrypt") != NULL
+            || strstr(load_path, "panglearmor") != NULL)) {
+        ALOGE("JihuansheProbe nativeLoad orig=%s redirected=%s",
+              orig_path.c_str(), redirected_path != NULL ? redirected_path : "<none>");
+    }
     if (redirected_path != NULL) {
         env = ensureEnvCreated();
         _file = env->NewStringUTF(redirected_path);

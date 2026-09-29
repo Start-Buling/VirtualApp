@@ -82,6 +82,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import mirror.android.app.ActivityThread;
@@ -506,6 +507,9 @@ public final class VirtualCore {
             throw new IllegalStateException("Initializer = NULL");
         }
         Log.d("Vxlib", "version: " + BuildConfig.commit);
+        if (processType == null) {
+            detectProcessType();
+        }
         switch (processType) {
             case Main:
                 initializer.onMainProcess();
@@ -838,7 +842,8 @@ public final class VirtualCore {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             ShortcutInfo likeShortcut;
-            likeShortcut = new ShortcutInfo.Builder(getContext(), packageName + "@" + userId)
+            String shortcutId = packageName + "@" + userId;
+            likeShortcut = new ShortcutInfo.Builder(getContext(), shortcutId)
                     .setLongLabel(name)
                     .setShortLabel(name)
                     .setIcon(Icon.createWithBitmap(icon))
@@ -847,9 +852,20 @@ public final class VirtualCore {
             ShortcutManager shortcutManager = getContext().getSystemService(ShortcutManager.class);
             if (shortcutManager != null) {
                 try {
-                    shortcutManager.requestPinShortcut(likeShortcut,
-                            PendingIntent.getActivity(getContext(), packageName.hashCode() + userId, shortcutIntent,
-                                    PendingIntent.FLAG_UPDATE_CURRENT).getIntentSender());
+                    boolean pinned = false;
+                    for (ShortcutInfo shortcutInfo : shortcutManager.getPinnedShortcuts()) {
+                        if (shortcutId.equals(shortcutInfo.getId())) {
+                            pinned = true;
+                            break;
+                        }
+                    }
+                    if (pinned) {
+                        shortcutManager.updateShortcuts(Collections.singletonList(likeShortcut));
+                    } else {
+                        shortcutManager.requestPinShortcut(likeShortcut,
+                                PendingIntent.getActivity(getContext(), packageName.hashCode() + userId, shortcutIntent,
+                                        PendingIntent.FLAG_UPDATE_CURRENT).getIntentSender());
+                    }
                 } catch (Throwable e) {
                     return false;
                 }

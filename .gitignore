@@ -106,3 +106,8 @@ security/proguard-rules.pro
 
 basegenerator/
 basegenerator/*
+
+# Local Idlefish data pipeline artifacts
+/page-probe/
+/server/data/
+current_idlefish_page.png

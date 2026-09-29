@@ -39,7 +39,7 @@ subprojects {
                 defaultConfig {
                     minSdkVersion 21
                     //noinspection OldTargetApi
-                    targetSdkVersion 26
+                    targetSdkVersion 28
 
                     versionCode rootProject.ext.VA_VERSION_CODE
                     versionName rootProject.ext.VA_VERSION

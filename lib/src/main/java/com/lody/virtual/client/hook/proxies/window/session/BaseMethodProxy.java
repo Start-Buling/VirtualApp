@@ -244,6 +244,9 @@ class Relayout extends BaseMethodProxy{
             WindowManager.LayoutParams attrs = (WindowManager.LayoutParams) args[index];
             if (attrs != null) {
                 attrs.packageName = getHostPkg();
+                // Secure virtual windows can trigger OEM privacy masks against the host surface.
+                // Keep cloned-app login pages visible inside the container.
+                attrs.flags &= ~WindowManager.LayoutParams.FLAG_SECURE;
                 switch (attrs.type) {
                     case WindowManager.LayoutParams.TYPE_PHONE:
                     case WindowManager.LayoutParams.TYPE_PRIORITY_PHONE:

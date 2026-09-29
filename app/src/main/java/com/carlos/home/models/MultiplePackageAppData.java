@@ -2,6 +2,7 @@ package com.carlos.home.models;
 
 import android.graphics.drawable.Drawable;
 
+import com.carlos.home.repo.AppNameRepository;
 import com.lody.virtual.client.core.VirtualCore;
 import com.lody.virtual.remote.InstalledAppInfo;
 
@@ -15,6 +16,7 @@ public class MultiplePackageAppData extends AppData {
     public int userId;
     public Drawable icon;
     public String name;
+    public String originalName;
     public String packageName;
 
     public String versionName;
@@ -29,8 +31,9 @@ public class MultiplePackageAppData extends AppData {
                 icon = state.newDrawable();
             }
         }
-        name = target.name;
         packageName = target.packageName;
+        originalName = target.originalName == null ? target.name : target.originalName;
+        name = AppNameRepository.getDisplayName(VirtualCore.get().getContext(), packageName, userId, originalName);
 
         //this.xposedModule = target.getXposedModule();
         this.versionName = target.getVersionName();

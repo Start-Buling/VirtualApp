@@ -12,17 +12,21 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.content.res.AssetManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -50,6 +54,9 @@ import com.carlos.common.utils.PathUtils;
 import com.carlos.common.utils.ResponseProgram;
 import com.carlos.common.utils.xapk.XAPKInstaller;
 import com.carlos.home.XposedManager.XposedManagerActivity;
+import com.carlos.home.idlefish.IdlefishEventStore;
+import com.carlos.home.idlefish.IdlefishEventUploader;
+import com.carlos.home.idlefish.IdlefishSyncConfig;
 import com.carlos.utils.FileUtils1;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.kook.common.utils.HVLog;
@@ -62,6 +69,7 @@ import com.carlos.common.ui.activity.abs.nestedadapter.SmartRecyclerAdapter;
 import com.carlos.home.adapters.LaunchpadAdapter;
 import com.carlos.home.models.AppData;
 import com.carlos.home.models.AppInfoLite;
+import com.carlos.home.repo.AppNameRepository;
 import com.carlos.widgets.TwoGearsView;
 
 import java.io.File;
@@ -71,8 +79,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.channels.FileChannel;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
 
 
 import com.carlos.home.models.EmptyAppData;
@@ -82,6 +94,9 @@ import com.carlos.widgets.MarqueeTextView;
 import com.lody.virtual.remote.InstalledAppInfo;
 import com.lody.virtual.remote.VAppInstallerParams;
 import com.lody.virtual.remote.VAppInstallerResult;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author LodyChen
@@ -239,7 +254,108 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView, La
         });
 
 
+        menu.add("Idlefish sync test").setIcon(R.drawable.ic_notification).setOnMenuItemClickListener(item -> {
+            showIdlefishSyncTestDialog();
+            return true;
+        });
+
         mMenuView.setOnClickListener(v -> mPopupMenu.show());
+    }
+
+    private void showIdlefishSyncTestDialog() {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        String endpoint = IdlefishSyncConfig.getEndpoint(this);
+        if (TextUtils.isEmpty(endpoint)) {
+            endpoint = "http://127.0.0.1:18080/api/v1/ingest/events";
+        }
+        input.setText(endpoint);
+        input.setSelection(input.getText().length());
+        int padding = ResponseProgram.dpToPx(this, 20);
+        input.setPadding(padding, 0, padding, 0);
+
+        new AlertDialog.Builder(this)
+                .setTitle("Idlefish sync test")
+                .setMessage("Run adb reverse tcp:18080 tcp:18080 first when the server is on this PC.")
+                .setView(input)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton("Send", (dialog, which) -> {
+                    String value = input.getText().toString().trim();
+                    if (TextUtils.isEmpty(value)) {
+                        Toast.makeText(this, "Endpoint is empty", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    IdlefishSyncConfig.setEndpoint(this, value);
+                    IdlefishSyncConfig.setEnabled(this, true);
+                    sendIdlefishSyncTestEvent(value);
+                })
+                .show();
+    }
+
+    private void sendIdlefishSyncTestEvent(String endpoint) {
+        Toast.makeText(this, "Sending Idlefish test event...", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            String message;
+            try {
+                JSONObject event = buildIdlefishSyncTestEvent();
+                IdlefishEventStore.enqueue(this, event.toString());
+                IdlefishEventUploader.UploadResult result =
+                        IdlefishEventUploader.uploadPending(this, endpoint, IdlefishSyncConfig.getDeviceSecret(this), 20);
+                if (result.success) {
+                    message = "Idlefish test uploaded: " + result.uploadedCount;
+                } else {
+                    message = "Idlefish test failed: " + result.message;
+                }
+            } catch (Throwable throwable) {
+                message = "Idlefish test error: " + throwable.getMessage();
+                Log.e(TAG, "sendIdlefishSyncTestEvent", throwable);
+            }
+            String finalMessage = message;
+            mUiHandler.post(() -> Toast.makeText(this, finalMessage, Toast.LENGTH_LONG).show());
+        }, "idlefish-sync-test").start();
+    }
+
+    private JSONObject buildIdlefishSyncTestEvent() throws Exception {
+        String capturedAt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).format(new Date());
+
+        JSONObject account = new JSONObject();
+        account.put("device_serial", Build.SERIAL);
+        account.put("package_name", "com.taobao.idlefish");
+        account.put("virtual_user_id", JSONObject.NULL);
+        account.put("shop_id", JSONObject.NULL);
+        account.put("account_alias", "debug-local");
+
+        JSONObject page = new JSONObject();
+        page.put("activity", "debug");
+        page.put("url", "debug://idlefish-sync-test");
+
+        JSONObject metrics = new JSONObject();
+        metrics.put("category", "debug");
+        metrics.put("updated_date", new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()));
+        metrics.put("service_score", 4.35);
+        metrics.put("service_score_peer_status", "debug");
+        metrics.put("item_quality_score", 3.2);
+        metrics.put("response_speed_score", 5.0);
+        metrics.put("logistics_score", 4.44);
+        metrics.put("after_sales_score", 5.0);
+
+        JSONObject raw = new JSONObject();
+        raw.put("ui_texts", new JSONArray());
+        raw.put("api", JSONObject.NULL);
+        raw.put("payload_hash", JSONObject.NULL);
+
+        JSONObject event = new JSONObject();
+        event.put("event_type", "idlefish_shop_service_score");
+        event.put("schema_version", 1);
+        event.put("event_id", UUID.randomUUID().toString());
+        event.put("captured_at", capturedAt);
+        event.put("source", "android_debug");
+        event.put("account", account);
+        event.put("page", page);
+        event.put("metrics", metrics);
+        event.put("raw", raw);
+        return event;
     }
 
     public void saveApk(String pkg){
@@ -391,6 +507,97 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView, La
         if (data instanceof PackageAppData || data instanceof MultiplePackageAppData) {
             mPresenter.enterAppSetting(data);
         }
+    }
+
+    private void showAppActionDialog(AppData data) {
+        if (data == null || !data.canLaunch()) {
+            return;
+        }
+        String[] actions = new String[]{"重命名", "管理分身", "创建桌面快捷方式", "还原名称", "应用设置", "删除"};
+        new AlertDialog.Builder(this)
+                .setTitle(data.getName())
+                .setItems(actions, (dialog, which) -> {
+                    if (which == 0) {
+                        showRenameDialog(data);
+                    } else if (which == 1) {
+                        openCloneManagement(data);
+                    } else if (which == 2) {
+                        createDesktopShortcut(data);
+                    } else if (which == 3) {
+                        AppNameRepository.clearCustomName(this, data.getPackageName(), data.getUserId());
+                        mPresenter.dataChanged();
+                    } else if (which == 4) {
+                        enterAppSetting(data);
+                    } else if (which == 5) {
+                        deleteApp(data);
+                    }
+                })
+                .show();
+    }
+
+    private void openCloneManagement(AppData data) {
+        if (data == null || !data.canLaunch()) {
+            return;
+        }
+        MirrorActivity.launch(this, data.getPackageName(), data.getUserId());
+    }
+
+    private void launchVirtualApp(AppData data) {
+        if (data == null || !data.canLaunch()) {
+            return;
+        }
+        boolean launched = VActivityManager.get().launchApp(data.getUserId(), data.getPackageName(), false);
+        if (!launched) {
+            openCloneManagement(data);
+        }
+    }
+
+    private void showRenameDialog(AppData data) {
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setSelectAllOnFocus(true);
+        input.setText(data.getName());
+        int padding = ResponseProgram.dpToPx(this, 20);
+        input.setPadding(padding, 0, padding, 0);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("重命名分身")
+                .setView(input)
+                .setPositiveButton("保存", null)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String newName = input.getText() == null ? null : input.getText().toString().trim();
+            if (TextUtils.isEmpty(newName)) {
+                input.setError("名称不能为空");
+                return;
+            }
+            AppNameRepository.setCustomName(this, data.getPackageName(), data.getUserId(), newName);
+            dialog.dismiss();
+            mPresenter.dataChanged();
+            Toast.makeText(this, "已重命名。桌面快捷方式需要重新创建后才会显示新名称。", Toast.LENGTH_SHORT).show();
+        }));
+        dialog.show();
+    }
+
+    private void createDesktopShortcut(AppData data) {
+        if (data == null || !data.canCreateShortcut()) {
+            return;
+        }
+        String displayName = data.getName();
+        boolean success = VirtualCore.get().createShortcut(data.getUserId(), data.getPackageName(), new VirtualCore.OnEmitShortcutListener() {
+            @Override
+            public Bitmap getIcon(Bitmap originIcon) {
+                return originIcon;
+            }
+
+            @Override
+            public String getName(String originName) {
+                return TextUtils.isEmpty(displayName) ? originName : displayName;
+            }
+        });
+        Toast.makeText(this, success ? "已请求创建桌面快捷方式" : "创建桌面快捷方式失败", Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -733,15 +940,12 @@ public class HomeActivity extends VActivity implements HomeContract.HomeView, La
     @Override
     public void onAppClick(int position, AppData data) {
         if (!data.isLoading()) {
-            mLaunchpadAdapter.notifyItemChanged(position);
-            //mPresenter.launchApp(data);
-
-            MirrorActivity.launch(this,data.getPackageName(),data.getUserId());
-            //VActivityManager.get().launchApp(data.getUserId(), data.getPackageName());
+            launchVirtualApp(data);
         }
     }
 
     @Override
     public void onAppLongClick(View view,AppData data,int position) {
+        showAppActionDialog(data);
     }
 }

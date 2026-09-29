@@ -3,8 +3,8 @@ MAIN_LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
-LOCAL_MODULE := v++_64
-LOCAL_CFLAGS := -DCORE_SO_NAME=\"libv++_64.so\"
+LOCAL_MODULE := hyxd_64
+LOCAL_CFLAGS := -DCORE_SO_NAME=\"libhyxd_64.so\"
 else
 LOCAL_MODULE := v++
 LOCAL_CFLAGS := -DCORE_SO_NAME=\"libv++.so\"

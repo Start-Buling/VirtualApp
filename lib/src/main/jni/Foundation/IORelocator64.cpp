@@ -1849,6 +1849,15 @@ bool on_found_linker_syscall_arch64(const char *path, int num, void *func) {
 }
 
 void onSoLoaded(const char *name, void *handle) {
+    if (name != NULL
+        && (strstr(name, "com.jihuanshe") != NULL
+            || strstr(name, "libexec") != NULL
+            || strstr(name, "NetHTProtect") != NULL
+            || strstr(name, "Encrypt") != NULL
+            || strstr(name, "pangle") != NULL
+            || strstr(name, "Pgl") != NULL)) {
+        ALOGE("JihuansheProbe dlopen name=%s handle=%p", name, handle);
+    }
 }
 
 bool relocate_linker(const char* LINKER_PATH) {

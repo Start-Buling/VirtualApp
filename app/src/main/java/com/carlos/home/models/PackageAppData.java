@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 
+import com.carlos.home.repo.AppNameRepository;
 import com.carlos.utils.Utils;
 import com.lody.virtual.helper.InstalledInfoCache;
 import com.lody.virtual.remote.InstalledAppInfo;
@@ -17,6 +18,7 @@ public class PackageAppData extends AppData {
 
     public String packageName;
     public String name;
+    public String originalName;
     public Drawable icon;
     public boolean fastOpen;
     public boolean isFirstOpen;
@@ -29,6 +31,8 @@ public class PackageAppData extends AppData {
         this.packageName = installedAppInfo.packageName;
         this.isFirstOpen = !installedAppInfo.isLaunched(0);
         loadData(context, installedAppInfo.getApplicationInfo(installedAppInfo.getInstalledUsers()[0]));
+        originalName = name;
+        name = AppNameRepository.getDisplayName(context, packageName, 0, name);
         this.xposedModule = installedAppInfo.xposedModule;
         versionName = installedAppInfo.getPackageInfo(0).versionName;
         namePinyin = Utils.getPingYin(name.toString());

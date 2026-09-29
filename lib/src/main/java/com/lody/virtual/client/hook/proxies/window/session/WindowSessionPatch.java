@@ -33,9 +33,12 @@ public class WindowSessionPatch extends MethodInvocationProxy<MethodInvocationSt
                 return super.call(who, method, args);
             }
         });
+        addMethodProxy(new BaseMethodProxy("addToDisplayAsUser"));
         addMethodProxy(new BaseMethodProxy("addToDisplayWithoutInputChannel"));
+        addMethodProxy(new BaseMethodProxy("addToDisplayAsUserWithoutInputChannel"));
         addMethodProxy(new BaseMethodProxy("addWithoutInputChannel"));
-		addMethodProxy(new Relayout("relayout"));
+        addMethodProxy(new BaseMethodProxy("relayout"));
+        addMethodProxy(new BaseMethodProxy("relayoutAsync"));
 	}
 
 
